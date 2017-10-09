@@ -1,25 +1,111 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+author: "Daniel Vena"
+date: "October 9th, 2017"
+output: html_document
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 ## Loading and preprocessing the data
+The section of code below first sets a working directory and then loads the activity data and store it in a variable called activity_data
 
-
+```{r}
+library(dplyr)
+wd <- "C:/Users/venadani/Dropbox/Courses/Data Science Specialization/Reproducible/CourseProject1/RepData_PeerAssessment1"
+setwd(wd)
+activity_data <- read.csv(unz("activity.zip", "activity.csv"))
+activity_data <- mutate(activity_data, 
+                        date = as.Date(date), 
+                        days = date - date[1], 
+                        wkdays = weekdays(date))
+```
 
 ## What is mean total number of steps taken per day?
+```{r}
+numSteps <- with(activity_data, tapply(steps, date, sum, na.rm=TRUE))
+hist(numSteps, breaks = 12, main = "Histogram of Number of Steps per Day", 
+     xlab = "Number of Steps", col = "grey")
+```
 
-
+### Mean and Median Number of Steps per Day
+```{r}
+meanNumSteps <- mean(numSteps)
+medNumSteps <- median(numSteps)
+data.frame("Number of Steps" = c(meanNumSteps, medNumSteps), row.names = c("Mean", "Median"))
+```
 
 ## What is the average daily activity pattern?
+```{r}
+dailySteps <- with(activity_data, tapply(steps, interval, mean, na.rm=TRUE))
 
+plot(names(dailySteps), dailySteps, type ="l", lwd = 2, main = "Meant Daily Steps per Interval",
+     xlab = "Daily Interval", ylab = "Number of Steps")
 
+findMax <- reshape(activity_data, v.names = "steps", timevar = "interval", idvar = "date", direction = "wide")
+rownames(findMax) <- findMax[,1]
+findMax[,1:3] <- NULL
+colnames(findMax) <- levels(as.factor(activity_data$interval))
+maxDailySteps <- apply(findMax, 2, mean, na.rm=TRUE)
+maxInterval <- levels(as.factor(activity_data$interval))[which.max(maxDailySteps)]
+maxInterval
+```
 
-## Imputing missing values
+## Inputing missing values
+```{r}
+numNA <- sum(is.na(activity_data$steps))
 
+# Create a new data set with NA data filled in
+wkday_lvls <- levels(as.factor(activity_data$wkdays))
+activity_data_narm <- activity_data
 
+for (ii in 1:length(wkday_lvls)) {
+      wkdayIdx <- activity_data$wkdays == wkday_lvls[ii]
+      idx <- (wkdayIdx & is.na(activity_data$steps)) 
+      activity_data_narm$steps[idx] <- mean(activity_data$steps[wkdayIdx], na.rm = TRUE)
+}
+
+numSteps_narm <- with(activity_data_narm, tapply(steps, date, sum))
+hist(numSteps_narm, breaks = 12, main = "Hisogram of Number of Steps per Day", 
+     xlab = "Number of Steps", col = "grey")
+
+meanNumSteps_narm <- mean(numSteps_narm)
+medNumSteps_narm <- median(numSteps_narm)
+```
+### Mean and Median Number of Steps with and withour NA removed
+```{r}
+data.frame("Number of Steps with NA" = c(meanNumSteps, medNumSteps), 
+           "Number of Steps NA Removed" = c(meanNumSteps_narm, medNumSteps_narm),  
+           row.names = c("Mean", "Median"))
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r fig1, fig.height = 5, fig.width = 7}
+wkdayIdx <- activity_data_narm$wkdays == "Monday" | 
+            activity_data_narm$wkdays == "Tuesday" | 
+            activity_data_narm$wkdays == "Wednesday" | 
+            activity_data_narm$wkdays == "Thursday" | 
+            activity_data_narm$wkdays == "Friday"
+
+wkendIdx <- activity_data_narm$wkdays == "Saturday" | 
+            activity_data_narm$wkdays == "Sunday"
+
+activity_data_narm <- mutate(activity_data_narm, weekend = wkendIdx,
+                                                  weekday = wkdayIdx)
+
+# find daily steps 
+dailySteps_we <- with(activity_data_narm[activity_data_narm$weekend, ], 
+                      tapply(steps, interval, mean, na.rm=TRUE))
+
+dailySteps_wd <- with(activity_data_narm[activity_data_narm$weekday, ], 
+                      tapply(steps, interval, mean, na.rm=TRUE))
+
+par(mfrow=c(2,1))
+par(mar = c(0.5,0,1.5,0))
+par(oma = c(4,4,0.5,0.5))
+plot(dailySteps_wd, type = "l", lwd = 2, main = "Weekday", xaxt='n', ylab = "Number of Steps") 
+plot(names(dailySteps_we), dailySteps_we, type = "l", lwd = 2, main = "Weekend", xlab = "Interval (min)", ylab = "Number of Steps")
+```
