@@ -3,16 +3,20 @@ title: "Reproducible Research: Peer Assessment 1"
 author: "Daniel Vena"
 date: "October 9th, 2017"
 output: html_document
+keep_md: true
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+
+```{r opts, echo = FALSE}
+knitr::opts_chunk$set(
+  fig.path = "figures/"
+)
 ```
 
 ## Loading and preprocessing the data
 The section of code below first sets a working directory and then loads the activity data and store it in a variable called activity_data
 
-```{r}
+```{r, echo=TRUE}
 library(dplyr)
 wd <- "C:/Users/venadani/Dropbox/Courses/Data Science Specialization/Reproducible/CourseProject1/RepData_PeerAssessment1"
 setwd(wd)
@@ -24,21 +28,21 @@ activity_data <- mutate(activity_data,
 ```
 
 ## What is mean total number of steps taken per day?
-```{r}
+```{r fig1, echo=TRUE}
 numSteps <- with(activity_data, tapply(steps, date, sum, na.rm=TRUE))
 hist(numSteps, breaks = 12, main = "Histogram of Number of Steps per Day", 
      xlab = "Number of Steps", col = "grey")
 ```
 
 ### Mean and Median Number of Steps per Day
-```{r}
+```{r, echo=TRUE}
 meanNumSteps <- mean(numSteps)
 medNumSteps <- median(numSteps)
 data.frame("Number of Steps" = c(meanNumSteps, medNumSteps), row.names = c("Mean", "Median"))
 ```
 
 ## What is the average daily activity pattern?
-```{r}
+```{r fig2, echo=TRUE}
 dailySteps <- with(activity_data, tapply(steps, interval, mean, na.rm=TRUE))
 
 plot(names(dailySteps), dailySteps, type ="l", lwd = 2, main = "Meant Daily Steps per Interval",
@@ -54,7 +58,7 @@ maxInterval
 ```
 
 ## Inputing missing values
-```{r}
+```{r fig3, echo=TRUE}
 numNA <- sum(is.na(activity_data$steps))
 
 # Create a new data set with NA data filled in
@@ -75,7 +79,7 @@ meanNumSteps_narm <- mean(numSteps_narm)
 medNumSteps_narm <- median(numSteps_narm)
 ```
 ### Mean and Median Number of Steps with and withour NA removed
-```{r}
+```{r, echo=TRUE}
 data.frame("Number of Steps with NA" = c(meanNumSteps, medNumSteps), 
            "Number of Steps NA Removed" = c(meanNumSteps_narm, medNumSteps_narm),  
            row.names = c("Mean", "Median"))
@@ -83,7 +87,7 @@ data.frame("Number of Steps with NA" = c(meanNumSteps, medNumSteps),
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
-```{r fig1, fig.height = 5, fig.width = 7}
+```{r fig4, fig.height = 5, fig.width = 7, echo=TRUE}
 wkdayIdx <- activity_data_narm$wkdays == "Monday" | 
             activity_data_narm$wkdays == "Tuesday" | 
             activity_data_narm$wkdays == "Wednesday" | 
